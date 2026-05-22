@@ -62,14 +62,4 @@ npm run dev     # runs on http://localhost:5173
 
 ---
 
-## API Endpoints
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/search?q=title` | Search movies by title |
-| GET | `/api/movie/:imdbId` | Full movie details |
-| GET | `/api/reviews/:imdbId` | Classified reviews with sentiment |
-
----
-
-*Built for academic showcase & portfolio — CineSentiment AI © 2026*
