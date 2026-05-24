@@ -1,5 +1,8 @@
+const cheerio = require('cheerio');
+const axios = require('axios');
+
 // CineSentiment AI — Mock IMDB Reviews per movie
-// Used as fallback when real scraping is unavailable
+// Used as fallback when real scraping is unavailable or rate-limited
 const REVIEW_DB = {
   default: [
     { id: 1, author: 'CinemaPhile88', rating: 10, date: '2024-01-15', text: 'An absolutely brilliant masterpiece. The direction is incredible and the lead performance is the most stunning, unforgettable acting witnessed in years. The film is gripping from start to finish, with a compelling and thought-provoking story. Perfect in every way.' },
@@ -26,19 +29,71 @@ const REVIEW_DB = {
   tt1375666: [ // Inception
     { id: 1, author: 'DreamWeaver', rating: 10, date: '2024-01-05', text: 'Absolutely mind-blowing. Nolan has created an extraordinary, original, brilliant film. The concept is fascinating, the execution is perfect, and the performances are excellent. A truly spectacular cinematic achievement unlike anything else.' },
     { id: 2, author: 'ScienceFiend', rating: 8, date: '2024-01-18', text: 'Very good film with a clever concept and great visuals. The action sequences are thrilling and the performances solid. The emotional core is surprisingly moving and the ending is unforgettable. Highly recommended.' },
-    { id: 3, author: 'ConfusedViewer', rating: 4, date: '2024-02-10', text: 'Too confusing and convoluted. I couldn\'t follow the plot at all. The film is boring in parts and tries too hard to be clever. The characters are not interesting or compelling. Overrated and disappointing.' },
+    { id: 3, author: 'ConfusedViewer', rating: 4, date: '2024-02-10', text: 'Too confusing and convoluted. I couldn\'t follow the plot at all. The film is boring in parts and tries too hard to be deep but ends up feeling pretentious and hollow. The pacing is dreadful and many scenes are unnecessarily boring. The story is mediocre and derivative. Very disappointing.' },
     { id: 4, author: 'NightDreamer', rating: 9, date: '2024-02-28', text: 'A stunning masterpiece of imagination and technical filmmaking. The layers of dreams create a brilliantly complex narrative. Hans Zimmer\'s score is powerful and moving. DiCaprio gives a great performance. Amazing film.' },
   ],
 };
 
-const getReviewsForMovie = (imdbId, title) => {
+const scrapeIMDbReviews = async (imdbId) => {
+  try {
+    const url = `https://www.imdb.com/title/${imdbId}/reviews`;
+    
+    const { data } = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      },
+      timeout: 6000
+    });
+
+    const $ = cheerio.load(data);
+    const reviews = [];
+
+    $('.imdb-user-review').each((i, el) => {
+      if (i >= 15) return; // Cap at top 15 reviews
+      
+      const author = $(el).find('.display-name-link a').text().trim() || 'Anonymous';
+      const title = $(el).find('.title').text().trim() || '';
+      const text = $(el).find('.text.show-more__control').text().trim();
+      const ratingText = $(el).find('.rating-other-user-rating span').first().text().trim();
+      const rating = parseInt(ratingText) || null;
+      const date = $(el).find('.review-date').text().trim() || new Date().toISOString().split('T')[0];
+
+      if (text) {
+        reviews.push({
+          id: i + 1,
+          author,
+          rating,
+          date,
+          text: title ? `${title}. ${text}` : text
+        });
+      }
+    });
+
+    return reviews.length > 0 ? reviews : null;
+  } catch (err) {
+    console.warn(`⚠️ Live IMDb scraper bypassed for ${imdbId} (using local shuffler fallback):`, err.message);
+    return null;
+  }
+};
+
+const getReviewsForMovie = async (imdbId, title) => {
+  // 1. Attempt live web scraping first
+  const liveReviews = await scrapeIMDbReviews(imdbId);
+  if (liveReviews) return liveReviews;
+
+  // 2. Fall back to local mock databases
   const key = imdbId?.toLowerCase();
   if (REVIEW_DB[key]) return REVIEW_DB[key];
-  // Generate slightly varied reviews using the title
+
+  // 3. Generate seed shuffled templates for other titles
   const seed = (title || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
   const base = REVIEW_DB.default;
-  // Shuffle deterministically
   const shuffled = [...base].sort((a, b) => ((a.id * seed) % 7) - ((b.id * seed) % 7));
+  
   return shuffled;
 };
 

@@ -34,6 +34,10 @@ const login = async (req, res) => {
     if (!user || !(await user.matchPassword(password)))
       return res.status(401).json({ error: 'Invalid email or password' });
 
+    // Update lastLogin timestamp
+    user.lastLogin = new Date();
+    await user.save().catch(() => {});
+
     res.json({ user, token: generateToken(user._id) });
   } catch (err) {
     res.status(500).json({ error: err.message });
