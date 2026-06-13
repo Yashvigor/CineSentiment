@@ -27,7 +27,7 @@ app.use('/api/analytics', analyticsRoutes);
 
 // Health check
 app.get('/', (req, res) => res.json({
-  message: 'CineSentiment AI Backend',
+  message: 'CineSentiment Backend',
   version: '1.0.0',
   status: 'running',
   endpoints: ['/api/auth', '/api/movies', '/api/reviews', '/api/analytics'],

@@ -1,7 +1,7 @@
 const cheerio = require('cheerio');
 const axios = require('axios');
 
-// CineSentiment AI — Mock IMDB Reviews per movie
+// CineSentiment — Mock IMDB Reviews per movie
 // Used as fallback when real scraping is unavailable or rate-limited
 const REVIEW_DB = {
   default: [

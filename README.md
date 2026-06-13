@@ -1,4 +1,4 @@
-# CineSentiment AI 🎬
+# CineSentiment 🎬
 A comprehensive, full-stack AI-powered movie sentiment analysis platform designed to analyze IMDB movie reviews and classify audience sentiments while providing a premium cinematic dashboard.
 
 🌐 Overview
